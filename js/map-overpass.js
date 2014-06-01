@@ -137,7 +137,7 @@ var pois = {
   'shop:supermarket': [['shopping','food'],'shopping_supermarket', 'Supermarket'],
   'shop:toys': [['shopping'],'shopping_toys', 'Toys'],
   'tourism:alpine_hut': [['amenity'],'accommodation_alpinehut', 'Alpine hut'],
-  'tourism:artwork': [['amenity','arts'],'tourist_art_gallery2', 'Artwork'],
+  'tourism:artwork': [['arts'],'tourist_art_gallery2', 'Artwork'],
   'tourism:attraction': [['amenity'],'tourist_attraction', 'Attraction'],
   'tourism:camp_site': [['amenity'],'accommodation_camping', 'Camp site'],
   'tourism:caravan_site': [['amenity'],'accommodation_caravan_park', 'Caravan site'],
