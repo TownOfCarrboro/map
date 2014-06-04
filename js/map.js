@@ -54,25 +54,92 @@ function map() {
 
 	var categories = ["Amenity", "Arts", "Financial", "Food", "Healthcare", "Shopping", "Transport"];
 	var clusters = {};
+  var subClusters = {
+    'Amenity': {
+      'Accomodation': null,
+      'Administrative': null,
+      'Culture': null,
+      'Equipments': null,
+      'Mail': null,
+      'Power': null,
+      'Recreation': null,
+      'Recycling': null,
+      'Religion': null,
+      'Safety': null,
+      'Schools': null,
+      'Toilets': null,
+    },
+    'Arts': {
+      'Crafts': null,
+      'Night Clubs': null,
+      'Shopping': null,
+      'Theaters': null
+    },
+    'Financial': {
+      'ATMs': null,
+      'Banks': null,
+    },
+    'Food': {
+      'Bars': null,
+      'Cafes': null,
+      'Restaurant': null,
+      'Shooping': null,
+      'Water': null,
+    },
+    'Healthcare': {
+      'Doctors': null,
+      'Hospitals': null,
+      'Pharmacies': null,
+      'Safety': null,
+    },
+    'Shopping': {
+      'Clothing': null,
+      'Crafts': null,
+      'Food': null,
+      'Vending Machines': null,
+    },
+    'Transport': {
+      'Aerial': null,
+      'Barriers': null,
+      'Bicycles': null,
+      'Buses': null,
+      'Cars': null,
+      'Gas Stations': null,
+      'Maritime': null,
+      'Parkings': null,
+      'Taxis': null,
+      'Trains': null,
+    }
+  };
+  var subClustersWithPoints = $.extend(true, {}, subClusters);
+  var mapLayers = [tileMapQuest];
 	for (var i = 0; i < categories.length; i++) {
-		clusters[categories[i]] = new L.MarkerClusterGroup(
+    var category = categories[i];
+		clusters[category] = new L.MarkerClusterGroup(
         {showCoverageOnHover: false, maxClusterRadius: 64});
+    for(var subCategory in subClusters[category]){
+      subClusters[category][subCategory] = new L.LayerGroup();
+      subClustersWithPoints[category][subCategory] = new L.LayerGroup();
+      mapLayers.push(subClusters[category][subCategory]);
+    }
 	}
 
   window.total_count = 0;
   //for (var i = 0; i < categories.length; i++) {
   //  map_populate_overpass(clusters[categories[i]], categories[i]);
   //}
-  var map_layers = [tileMapQuest];
   var defaultCategory = QueryString.category ? QueryString.category : 'Amenity';
-  map_layers.push(clusters[defaultCategory]); // select first category
+  mapLayers.push(clusters[defaultCategory]); // select first category
+  //for(var key in subClusters[defaultCategory]){
+  //  mapLayers.push(subClusters[defaultCategory][key]);
+  //};
 
 	var map = L.map('map', {
 		center: [35.91081,-79.07171],
 		zoom: 16,
     minZoom: 13,
     maxZoom: 19,
-		layers: map_layers,
+		layers: mapLayers,
 		worldCopyJump: true
 	});
 
@@ -85,11 +152,14 @@ function map() {
 		collapsed: true
 	}).addTo(map);
 
+  var currentCategory = defaultCategory;
   var categoryLayers = L.control.layers(
     clusters,
-    {},
-		{collapsed: false}
+    subClusters[currentCategory],
+		{collapsed: true}
   ).addTo(map);
+  L.DomUtil.addClass(categoryLayers._container, 'categories-control');
+
 
 	map.on('moveend', function(e){
 		if(map.getZoom() >= 13){
@@ -290,7 +360,98 @@ function map() {
       negativePolygon.addTo(map);
   });
 
-  var points = {};
+  var updateClusters = function() {
+    if (this.updatingClusters){
+      return;
+    }
+    var wasUpdatingClusters = this.updatingClusters ? this.updatingClusters : false;
+    this.updatingClusters = true;
+    categories.forEach(function (category) {
+      if (category != currentCategory){
+        return;
+      }
+			categoryLayer = clusters[category];
+      // this test should not be needed as the category is already checked above.
+			if (!map.hasLayer(categoryLayer)) {
+				return;
+			}
+      var markers = [];
+      for(var subCategory in subClusters[category]){
+        var subCluster = subClusters[category][subCategory];
+        var subClusterWithPoints = subClustersWithPoints[category][subCategory];
+        if (map.hasLayer(subCluster)){
+          markers = markers.concat(subClusterWithPoints.getLayers());
+        }
+      };
+      var uniqueMarkers = [];
+      $.each(markers, function(i,e){
+        var id = e.getPopup().getContent();
+        var duplicate = false;
+        for (var j = 0; j < uniqueMarkers.length; ++j){
+          if (uniqueMarkers[j].getPopup().getContent() === id){
+            duplicate = true;
+            break;
+          }
+        };
+        if (!duplicate){
+          uniqueMarkers.push(e);
+        }
+      });
+      //categoryLayer.clearLayers();
+      //categoryLayer.addLayers(uniqueMarkers);
+      var existingMarkers = categoryLayer.getLayers();
+      $.each(existingMarkers, function(i,e){
+        if (uniqueMarkers.indexOf(e) == -1){
+          categoryLayer.removeLayer(e);
+          //e.removeFrom(categoryLayer);
+        }
+      });
+      $.each(uniqueMarkers, function(i,e){
+        if (existingMarkers.indexOf(e) == -1){
+          categoryLayer.addLayer(e);
+          //e.addTo(categoryLayer);
+        }
+      });
+
+    });
+    this.updatingClusters = wasUpdatingClusters;
+  };
+
+  var updateLayer = function(newCategory){
+    if (this.updatingClusters){
+      return;
+    }
+    var wasUpdatingClusters = this.updatingClusters ? this.updatinClusters : false;
+    // disable refresh
+    this.updatingClusters = true;
+    for(var subCategory in subClusters[currentCategory]){
+      categoryLayers.removeLayer(subClusters[currentCategory][subCategory])
+    }
+    if (typeof newCategory !== 'undefined'){
+      currentCategory = newCategory;
+    }
+    else{
+      for (var i=0;i<categories.length;++i){
+        var category = categories[i];
+        var categoryLayer = clusters[category];
+			  if (map.hasLayer(categoryLayer)) {
+          currentCategory = category;
+          break;
+        }
+      }
+    }
+    for(var subCategory in subClusters[currentCategory]){
+      categoryLayers.addOverlay(subClusters[currentCategory][subCategory], subCategory)
+    }
+    this.updatingClusters = wasUpdatingClusters;
+    updateClusters();
+    info.update();
+  };
+  var onLayerAdd = function(category){
+    //updateLayer(category.name);
+    // prevent some race condition
+    setTimeout(updateLayer, 10, category.name);
+  }
 
   var info = L.control();
   info.id = "info";
@@ -316,6 +477,7 @@ function map() {
 			if (!map.hasLayer(categoryLayer)) {
 				return;
 			}
+
 			categoryLayer.eachLayer(function(layer) {
 				if (bounds.contains(layer.getLatLng())) {
 						right_html = '<div class="placename">' + layer.options.title + '</div>';
@@ -332,10 +494,8 @@ function map() {
 			});
 			var marker_html;
 			inBounds.sort(function(a,b){
-				// no idea what will it do with chinese/arabic, but should work
 				return a.title.localeCompare(b.title);
 			});
-			// these are not yet translated
 			if (inBounds.length==0) {
 				marker_html="<span class='title'>No venues visible.</span>";
 			} else {
@@ -354,12 +514,16 @@ function map() {
       height = Math.min(height, maxHeight - 20);
       $('#info_div').css("maxHeight", height);
   };
-  map.addControl(info);
 
 	map.on('moveend', info.update);
-	map.on('layeradd', info.update);
-	//map.on('layerremove', info.update);
-  info.update();
+	//map.on('layeradd', onLayerAdd);
+	//map.on('layerremove', onLayerRemove);
+	//map.on('overlayadd', updateClusters);
+	//map.on('overlayremove', updateClusters);
+	map.on('baselayerchange', onLayerAdd, categoryLayers);
+	map.on('overlayadd', updateClusters, categoryLayers);
+	map.on('overlayremove', updateClusters, categoryLayers);
+  //info.update();
 
   var server = 'http://overpass-api.de/api/interpreter?data='
   var query = server + '[out:json][timeout:25];area(3600179859)->.area;('
@@ -372,15 +536,22 @@ function map() {
   query += 'node["barrier"](area.area);'
   query += ');out body;>;out skel qt;'
 
+  var points = {};
+
   $.getJSON(query, function(data){
     for (var i = 0; i < categories.length; i++) {
       var category= categories[i];
-      points[category] = parseElements(data, category.toLowerCase());
-      populateMarkers(clusters[category], points[category]);
-	  }
-    info.update();
+      points[category] = {};
+      for (var subCategory in subClusters[category]){
+        points[category][subCategory] =
+          parseElements(data, category.toLowerCase(), subCategory.toLowerCase());
+        populateMarkers(subClustersWithPoints[category][subCategory],
+                        points[category][subCategory]);
+      };
+	  };
+    map.addControl(info);
+    updateLayer(currentCategory);
     map.removeControl(waitControl);
   });
-
 
 }
