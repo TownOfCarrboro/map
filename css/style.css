@@ -56,6 +56,11 @@ a {
     cursor:pointer;
 }
 
+.categories-control a{
+  background-image: url(../img/pin-gray.55.png);
+  background-size: 30px 30px;
+}
+
 .info-control{
   width: 200px;
   overflow-y: visible;
