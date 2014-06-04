@@ -207,47 +207,43 @@ function poiName(tags){
   return name;
 }
 
-function parseElements(data, category, subCategory){
-  var points = [];
+function poiLatLngs(elements){
+  var pois = {};
+  var poisWithTags = [];
+
   var nodes = {};
   var ways = {};
   var latlon_ways = {};
   var relation = {};
 
-  // Extract nodes, ways and the unique relation
-  for (var i = 0; i < data.elements.length; ++i){
-    var element = data.elements[i];
+  // First pass, extract nodes, ways and the unique relation
+  for (var i = 0; i < elements.length; ++i){
+    var element = elements[i];
     switch (element['type']){
     case 'node':
       nodes [element['id']] = [element['lat'],element['lon']];
       break;
     case 'way':
-      ways [element['id']] = element['nodes'];
+      ways[element['id']] = element['nodes'];
       break;
     case 'relation':
       relation = element;
     default:
       break;
     }
+    if (element['tags']){
+      poisWithTags.push(element);
+    }
   };
-  for (var i = 0; i < data.elements.length; ++i){
-    var element = data.elements[i];
+  elements = poisWithTags;
+
+  // Second pass, get the latlngs
+  for (var i = 0; i < elements.length; ++i){
+    var element = elements[i];
     var lat = element['lat'];
     var lon = element['lon'];
     var typ = element['type'];
-    var tags = element['tags'];
     var ide = element['id'];
-    var access = (tags != null) ? tags['access'] : 'public';
-
-    //var elementCategories = poiCategories(tags);
-    //if ($.inArray(category, elementCategories) == -1){
-    if (!isPOIInCategory(tags, category, subCategory)){
-      continue;
-    };
-
-    if (access == 'private' || access == 'customers'){
-      continue;
-    };
 
     if (typ == 'way'){
       lat = 0;
@@ -267,6 +263,33 @@ function parseElements(data, category, subCategory){
       lat = latlon_ways[element['members'][0]['ref']][0];
       lon = latlon_ways[element['members'][0]['ref']][1];
     }
+    pois[ide] = [lat, lon];
+  }
+  return [pois, elements];
+};
+
+function parseElements(elements, latLngs, category, subCategory){
+  var points = [];
+
+  for (var i = 0; i < elements.length; ++i){
+    var element = elements[i];
+    var ide = element['id'];
+    var latLng = latLngs[ide];
+    var lat = latLng[0];
+    var lon = latLng[1];
+    var typ = element['type'];
+    var tags = element['tags'];
+    var access = (tags != null) ? tags['access'] : 'public';
+
+    //var elementCategories = poiCategories(tags);
+    //if ($.inArray(category, elementCategories) == -1){
+    if (!isPOIInCategory(tags, category, subCategory)){
+      continue;
+    }
+
+    if (access == 'private' || access == 'customers'){
+      continue;
+    };
 
     if (lat == null || lon == null){
       continue;

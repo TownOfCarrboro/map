@@ -438,6 +438,7 @@ function map() {
       });
 
     });
+    info.update();
     this.updatingClusters = wasUpdatingClusters;
   };
 
@@ -469,7 +470,6 @@ function map() {
     }
     this.updatingClusters = wasUpdatingClusters;
     updateClusters();
-    info.update();
   };
   var onLayerAdd = function(category){
     //updateLayer(category.name);
@@ -563,12 +563,16 @@ function map() {
   var points = {};
 
   $.getJSON(query, function(data){
+    var elements = data.elements;
+    var res = poiLatLngs(elements);
+    var latLngs = res[0];
+    elements = res[1];
     for (var i = 0; i < categories.length; i++) {
       var category= categories[i];
       points[category] = {};
       for (var subCategory in subClusters[category]){
         points[category][subCategory] =
-          parseElements(data, category.toLowerCase(), subCategory.toLowerCase());
+          parseElements(elements, latLngs, category.toLowerCase(), subCategory.toLowerCase());
         populateMarkers(subClustersWithPoints[category][subCategory],
                         points[category][subCategory]);
       };
