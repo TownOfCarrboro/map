@@ -284,6 +284,32 @@ function map() {
   };
   map.addControl(logoControl);
 
+  var usaLatLngs = [[49.3457868,-124.7844079],
+                    [49.3457868, -66.9513812],
+                    [24.7433195, -66.9513812],
+                    [24.7433195, -124.7844079]];
+  var startPolygon = L.polygon(usaLatLngs,
+                               {color: '#ffffff',
+                                opacity: 0.0,
+                                fillOpacity: 1.0,
+                                clickable: false});
+  startPolygon.addTo(map);
+  var fade = function(element, start, end){
+    var duration = 2000;
+    var steps = 100;
+    var step = (end - start) / steps;
+    if (start > end && element.options.fillOpacity > end ||
+        start < end && element.options.fillOpacity < end){
+      var newFillOpacity = element.options.fillOpacity + step;
+      newFillOpacity = newFillOpacity > 1.0 ? 1.0 : (newFillOpacity < 0.0 ? 0.0 : newFillOpacity);
+      element.setStyle({fillOpacity: newFillOpacity});
+      setTimeout(fade, duration / steps, element, start, end);
+    } else if (element.options.fillOpacity == 0.){
+      map.removeLayer(element);
+    }
+  };
+  fade(startPolygon, 1.0, 0.0);
+
   $.getJSON('http://overpass-api.de/api/interpreter?data=[out:json];relation%28179859%29%3B%28%2E%5F%3B%3E%3B%29%3Bout%20skel%3B', function(data){
       var nodes = {};
       var ways = {};
@@ -331,10 +357,7 @@ function map() {
       }
       //alert(numMergedWays)
       // Draw merged ways
-      var latlngs = [[[49.3457868,-124.7844079],
-                      [49.3457868, -66.9513812],
-                      [24.7433195, -66.9513812],
-                      [24.7433195, -124.7844079]]];
+      var latlngs = [usaLatLngs];
       $.each(relation['members'], function(key, value){
           if (value['role'] == 'outer'){
               if (mergedWays.hasOwnProperty(value['ref'])){
@@ -352,12 +375,13 @@ function map() {
               }
           };
         });
-      var negativePolygon = L.polygon(latlngs,
-                                      {color: '#5b524f',
-                                       opacity: 0.0,
-                                       fillOpacity: 0.1,
-                                       clickable:false});
-      negativePolygon.addTo(map);
+    var negativePolygon = L.polygon(latlngs,
+                                    {color: '#5b524f',
+                                     opacity: 0.0,
+                                     fillOpacity: 0.0,
+                                     clickable:false});
+    negativePolygon.addTo(map);
+    fade(negativePolygon, 0.0, 0.1);
   });
 
   var updateClusters = function() {
