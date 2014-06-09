@@ -51,7 +51,7 @@ a {
   display:none;
 }
 
-.placename{
+.poi-name{
     border-bottom: 1px rgb(230,230,230) solid;
     cursor:pointer;
 }
@@ -60,11 +60,41 @@ a {
   background-image: url(../img/pin-gray.55.png);
   background-size: 30px 30px;
 }
-
+/*
+.leaflet-control-layers-separator{
+    display: none;
+}
+.leaflet-control-layers-overlays{
+    display: none;
+}
+*/
 .info-control{
+  overflow-y: visible;
+  overflow-x: hidden;
+}
+.info-control-toggle{
+  background-position: 50% 50%;
+	background-repeat: no-repeat;
+  background-image: url(../img/pin-gray.55.png);
+  background-size: 26px 26px;
+  display: block;
+  width: 36px;
+  height: 36px;
+}
+.leaflet-control-layers-expanded .info-control-toggle{
+	display: none;
+}
+.info-control-div{
+  display: none;
   width: 200px;
   overflow-y: visible;
   overflow-x: hidden;
+}
+.info-control-div{
+  display: none;
+}
+.leaflet-control-layers-expanded .info-control-div{
+  display: block;
 }
 
 .locate-control img{

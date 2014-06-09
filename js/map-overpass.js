@@ -346,6 +346,7 @@ function parseElements(elements, latLngs, category, subCategory){
 }
 
 function populateMarkers(cluster, data) {
+  var markers = {};
 	//$.getJSON('overpass-' + category + '.json', function(data) {
 	$.each(data, function(key, val) {
 		var popup = '<b>' + val['title'] + '</b> <a href="http://openstreetmap.org/browse/' + val['type'] + '/' + val['id'] + '" target="_blank">*</a><hr/>';
@@ -372,9 +373,10 @@ function populateMarkers(cluster, data) {
 			popup += val['desc'] + '<br/>';
 		}
 		var icon = window.mapIcons[val['icon']];
-    var m = L.marker([val['lat'], val['lon']], options={"title": val['title'], "icon": icon})
-      .bindPopup(popup).addTo(cluster);
+    var m = L.marker([val['lat'], val['lon']], options={"title": val['title'], "icon": icon, "poi":val['id']})
+      .bindPopup(popup, options={'poi':val['id']}).addTo(cluster);
     //cluster.addLayer(m);
+    markers[val['id']]=m;
 	});
-	//});
+	return markers;
 }

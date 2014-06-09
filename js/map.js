@@ -134,9 +134,14 @@ function map() {
   //  mapLayers.push(subClusters[defaultCategory][key]);
   //};
 
+  var defaultZoom = QueryString.zoom ? QueryString.zoom : '16';
+  var defaultCenter = QueryString.center ? QueryString.center : '35.91081,-79.07171';
+  var defaultLat = defaultCenter.split(',')[0];
+  var defaultLng = defaultCenter.split(',')[1];
+  var defaultPOI = QueryString.poi ? QueryString.poi : undefined;
 	var map = L.map('map', {
-		center: [35.91081,-79.07171],
-		zoom: 16,
+		center: [parseFloat(defaultLat),parseFloat(defaultLng)],
+		zoom: parseInt(defaultZoom),
     minZoom: 13,
     maxZoom: 19,
 		layers: mapLayers,
@@ -152,14 +157,28 @@ function map() {
 		collapsed: true
 	}).addTo(map);
 
+  var currentPOI = defaultPOI;
   var currentCategory = defaultCategory;
   var categoryLayers = L.control.layers(
     clusters,
     subClusters[currentCategory],
-		{collapsed: true}
+		{collapsed: false}
   ).addTo(map);
   L.DomUtil.addClass(categoryLayers._container, 'categories-control');
-
+  categoryLayers._container.id = 'cat';
+  categoryLayers._separator.style.display = 'none';
+  categoryLayers._overlaysList.style.display = 'none';
+  $('#cat').hover(function() {
+    //L.DomUtil.addClass(categoryLayers._separator, "control-layers-show");
+    //L.DomUtil.addClass(categoryLayers._overlaysList, "control-layers-show");
+    categoryLayers._separator.style.display = 'block';
+    categoryLayers._overlaysList.style.display = 'block';
+  }, function() {
+    //L.DomUtil.removeClass(categoryLayers._separator, "control-layers-show");
+    //L.DomUtil.removeClass(categoryLayers._overlaysList, "control-layers-show");
+    categoryLayers._separator.style.display = 'none';
+    categoryLayers._overlaysList.style.display = 'none';
+  });
 
 	map.on('moveend', function(e){
 		if(map.getZoom() >= 13){
@@ -421,8 +440,6 @@ function map() {
           uniqueMarkers.push(e);
         }
       });
-      //categoryLayer.clearLayers();
-      //categoryLayer.addLayers(uniqueMarkers);
       var existingMarkers = categoryLayer.getLayers();
       $.each(existingMarkers, function(i,e){
         if (uniqueMarkers.indexOf(e) == -1){
@@ -470,30 +487,84 @@ function map() {
     }
     this.updatingClusters = wasUpdatingClusters;
     updateClusters();
+    updateURL();
   };
+
   var onLayerAdd = function(category){
-    //updateLayer(category.name);
-    // prevent some race condition
-    setTimeout(updateLayer, 10, category.name);
+    // test if category is part of categoryLayers
+    for (i in categoryLayers._layers) {
+			var obj = categoryLayers._layers[i];
+			if (obj.name == category.name){
+        // prevent some race condition
+        setTimeout(updateLayer, 10, category.name);
+        return;
+      }
+		}
+  }
+
+  var updateURL = function(){
+    var newURL=document.URL.replace(/\?.+/,'');
+    newURL+='?category='+currentCategory;
+    newURL+='&zoom='+map.getZoom();
+    newURL+='&center='+map.getCenter().lat.toFixed(6)+','+map.getCenter().lng.toFixed(6);
+    if(currentPOI){
+      newURL+='&poi='+currentPOI;
+    }
+    history.replaceState({},'',newURL);
+  }
+
+  var onPopup = function(event){
+    if(event.type == 'popupopen'){
+      currentPOI=event.popup.options.poi;
+    }
+    else if (event.type =='popupclose'){
+      currentPOI=undefined;
+    }
+    updateURL();
   }
 
   var info = L.control();
   info.id = "info";
 
   info.onAdd = function (map) {
-    this._div = L.DomUtil.create('div', 'info-control');
-    this._div.id = "info_div";
-    L.DomUtil.addClass(this._div, 'leaflet-control-layers');
-    L.DomUtil.addClass(this._div, 'leaflet-control-layers-expanded');
-    L.DomUtil.addClass(this._div, 'leaflet-control');
-    L.DomUtil.addClass(this._div, 'leaflet-container');
+    this._container=L.DomUtil.create('div','info-control');
+    L.DomUtil.addClass(this._container,'leaflet-control');
+    L.DomUtil.addClass(this._container,'leaflet-control-layers');
+    L.DomUtil.addClass(this._container,'leaflet-container');
+    this._container.id="info_container";
+
+    L.DomEvent
+      .on(this._container, 'mouseenter', info.open)
+      .on(this._container, 'mouseleave', info.close);
+    $('#info_container').mouseenter( function(){
+      info.open();
+    });
+    $('#info_container').mouseleave( function(){
+      info.close();
+    });
+
+    var link=this._infoLink = L.DomUtil.create('a','info-control-toggle',this._container);
+		link.href='#';
+		link.title='POIs';
+
+    this._div=L.DomUtil.create('div','info-control-div',this._container);
+    this._div.id="info_div";
     L.DomEvent.disableScrollPropagation(this._div);
     L.DomEvent.disableClickPropagation(this._div);
 
-    //this.update();
-    return this._div;
+    return this._container;
   };
+
+  info.open = function(){
+    L.DomUtil.addClass(info._container, 'leaflet-control-layers-expanded');
+  }
+
+  info.close = function(){
+    L.DomUtil.removeClass(info._container, 'leaflet-control-layers-expanded');
+  }
+
   info.update = function () {
+
 		var inBounds = [];
 		var bounds = map.getBounds();
 		categories.forEach(function (category) {
@@ -504,7 +575,7 @@ function map() {
 
 			categoryLayer.eachLayer(function(layer) {
 				if (bounds.contains(layer.getLatLng())) {
-						right_html = '<div class="placename">' + layer.options.title + '</div>';
+						right_html = '<div class="poi-name">' + layer.options.title + '</div>';
 						var newdiv = $(right_html);
 						$(newdiv).click(function() {
               map.panTo(layer.getLatLng())
@@ -512,8 +583,8 @@ function map() {
 							var visible = categoryLayer.getVisibleParent(layer);
 							visible.bindPopup(layer.getPopup()).openPopup();
 						});
-						// title for sorting
-						inBounds.push({div:newdiv,title:layer.options.title});
+					// title for sorting
+					inBounds.push({div:newdiv,title:layer.options.title});
 				}
 			});
 			var marker_html;
@@ -530,24 +601,25 @@ function map() {
         $('#info_div').append(object.div);
 		  });
     });
-      var top = $("#info_div").offset() ? $("#info_div").offset().top : 0;
-      var height = info._div.scrollHeight;
-      var attributionControl = map.attributionControl;
-      var attributionTop =  attributionControl? $(attributionControl._container).offset().top : 0;
-      var maxHeight = attributionTop - top;
-      height = Math.min(height, maxHeight - 20);
-      $('#info_div').css("maxHeight", height);
+    var top = $("#info_container").offset() ? $("#info_container").offset().top : 0;
+    var height = $("#info_div").height();
+    var attributionControl = map.attributionControl;
+    var attributionTop =  attributionControl? $(attributionControl._container).offset().top : 0;
+    var maxHeight = attributionTop - top;
+    height = Math.min(height, maxHeight - 20);
+    height = Math.max(height, 36);
+    $('#info_container').css("maxHeight", height);
   };
+  map.addControl(info);
 
 	map.on('moveend', info.update);
-	//map.on('layeradd', onLayerAdd);
-	//map.on('layerremove', onLayerRemove);
-	//map.on('overlayadd', updateClusters);
-	//map.on('overlayremove', updateClusters);
+	map.on('moveend', updateURL);
+	map.on('zoomend', updateURL);
+	map.on('popupopen', onPopup);
+  map.on('popupclose', onPopup);
 	map.on('baselayerchange', onLayerAdd, categoryLayers);
 	map.on('overlayadd', updateClusters, categoryLayers);
 	map.on('overlayremove', updateClusters, categoryLayers);
-  //info.update();
 
   var server = 'http://overpass-api.de/api/interpreter?data='
   var query = server + '[out:json][timeout:25];area(3600179859)->.area;('
@@ -561,6 +633,7 @@ function map() {
   query += ');out body;>;out skel qt;'
 
   var points = {};
+  var markers = {};
 
   $.getJSON(query, function(data){
     var elements = data.elements;
@@ -573,13 +646,18 @@ function map() {
       for (var subCategory in subClusters[category]){
         points[category][subCategory] =
           parseElements(elements, latLngs, category.toLowerCase(), subCategory.toLowerCase());
-        populateMarkers(subClustersWithPoints[category][subCategory],
-                        points[category][subCategory]);
+        var populatedMarkers = populateMarkers(subClustersWithPoints[category][subCategory],
+                                points[category][subCategory]);
+        for(var m in populatedMarkers){
+          markers[m] = populatedMarkers[m];
+        }
       };
 	  };
-    map.addControl(info);
     updateLayer(currentCategory);
     map.removeControl(waitControl);
+    if (currentPOI){
+      markers[currentPOI].openPopup();
+    }
   });
 
 }
