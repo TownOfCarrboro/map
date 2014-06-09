@@ -134,9 +134,14 @@ function map() {
   //  mapLayers.push(subClusters[defaultCategory][key]);
   //};
 
+  var defaultZoom = QueryString.zoom ? QueryString.zoom : '16';
+  var defaultCenter = QueryString.center ? QueryString.center : '35.91081,-79.07171';
+  var defaultLat = defaultCenter.split(',')[0];
+  var defaultLng = defaultCenter.split(',')[1];
+  var defaultPOI = QueryString.poi ? QueryString.poi : undefined;
 	var map = L.map('map', {
-		center: [35.91081,-79.07171],
-		zoom: 16,
+		center: [parseFloat(defaultLat),parseFloat(defaultLng)],
+		zoom: parseInt(defaultZoom),
     minZoom: 13,
     maxZoom: 19,
 		layers: mapLayers,
@@ -152,6 +157,7 @@ function map() {
 		collapsed: true
 	}).addTo(map);
 
+  var currentPOI = defaultPOI;
   var currentCategory = defaultCategory;
   var categoryLayers = L.control.layers(
     clusters,
@@ -481,7 +487,9 @@ function map() {
     }
     this.updatingClusters = wasUpdatingClusters;
     updateClusters();
+    updateURL();
   };
+
   var onLayerAdd = function(category){
     // test if category is part of categoryLayers
     for (i in categoryLayers._layers) {
@@ -494,33 +502,53 @@ function map() {
 		}
   }
 
+  var updateURL = function(){
+    var newURL=document.URL.replace(/\?.+/,'');
+    newURL+='?category='+currentCategory;
+    newURL+='&zoom='+map.getZoom();
+    newURL+='&center='+map.getCenter().lat.toFixed(6)+','+map.getCenter().lng.toFixed(6);
+    if(currentPOI){
+      newURL+='&poi='+currentPOI;
+    }
+    history.replaceState({},'',newURL);
+  }
+
+  var onPopup = function(event){
+    if(event.type == 'popupopen'){
+      currentPOI=event.popup.options.poi;
+    }
+    else if (event.type =='popupclose'){
+      currentPOI=undefined;
+    }
+    updateURL();
+  }
+
   var info = L.control();
   info.id = "info";
 
   info.onAdd = function (map) {
-    this._container = L.DomUtil.create('div', 'info-control');
-    L.DomUtil.addClass(this._container, 'leaflet-control');
-    L.DomUtil.addClass(this._container, 'leaflet-control-layers');
-    L.DomUtil.addClass(this._container, 'leaflet-container');
-    this._container.id = "info_container";
+    this._container=L.DomUtil.create('div','info-control');
+    L.DomUtil.addClass(this._container,'leaflet-control');
+    L.DomUtil.addClass(this._container,'leaflet-control-layers');
+    L.DomUtil.addClass(this._container,'leaflet-container');
+    this._container.id="info_container";
 
     L.DomEvent
-          .on(this._container, 'mouseenter', info.open)
-          .on(this._container, 'mouseleave', info.close);
-      $('#info_container').mouseenter( function(){
-          info.open();
-      });
-      $('#info_container').mouseleave( function(){
-          info.close();
-      });
+      .on(this._container, 'mouseenter', info.open)
+      .on(this._container, 'mouseleave', info.close);
+    $('#info_container').mouseenter( function(){
+      info.open();
+    });
+    $('#info_container').mouseleave( function(){
+      info.close();
+    });
 
+    var link=this._infoLink = L.DomUtil.create('a','info-control-toggle',this._container);
+		link.href='#';
+		link.title='POIs';
 
-    var link = this._infoLink = L.DomUtil.create('a', 'info-control-toggle', this._container);
-		link.href = '#';
-		link.title = 'POIs';
-
-    this._div = L.DomUtil.create('div', 'info-control-div', this._container);
-    this._div.id = "info_div";
+    this._div=L.DomUtil.create('div','info-control-div',this._container);
+    this._div.id="info_div";
     L.DomEvent.disableScrollPropagation(this._div);
     L.DomEvent.disableClickPropagation(this._div);
 
@@ -585,6 +613,10 @@ function map() {
   map.addControl(info);
 
 	map.on('moveend', info.update);
+	map.on('moveend', updateURL);
+	map.on('zoomend', updateURL);
+	map.on('popupopen', onPopup);
+  map.on('popupclose', onPopup);
 	map.on('baselayerchange', onLayerAdd, categoryLayers);
 	map.on('overlayadd', updateClusters, categoryLayers);
 	map.on('overlayremove', updateClusters, categoryLayers);
@@ -601,6 +633,7 @@ function map() {
   query += ');out body;>;out skel qt;'
 
   var points = {};
+  var markers = {};
 
   $.getJSON(query, function(data){
     var elements = data.elements;
@@ -613,12 +646,18 @@ function map() {
       for (var subCategory in subClusters[category]){
         points[category][subCategory] =
           parseElements(elements, latLngs, category.toLowerCase(), subCategory.toLowerCase());
-        populateMarkers(subClustersWithPoints[category][subCategory],
-                        points[category][subCategory]);
+        var populatedMarkers = populateMarkers(subClustersWithPoints[category][subCategory],
+                                points[category][subCategory]);
+        for(var m in populatedMarkers){
+          markers[m] = populatedMarkers[m];
+        }
       };
 	  };
     updateLayer(currentCategory);
     map.removeControl(waitControl);
+    if (currentPOI){
+      markers[currentPOI].openPopup();
+    }
   });
 
 }
