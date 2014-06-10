@@ -165,18 +165,21 @@ function map() {
 		{collapsed: false}
   ).addTo(map);
   L.DomUtil.addClass(categoryLayers._container, 'categories-control');
+  L.DomUtil.addClass(categoryLayers._container, 'categories-control-collapsed');
   categoryLayers._container.id = 'cat';
-  categoryLayers._separator.style.display = 'none';
+  //categoryLayers._separator.style.display = 'none';
   categoryLayers._overlaysList.style.display = 'none';
   $('#cat').hover(function() {
+    L.DomUtil.removeClass(categoryLayers._container, 'categories-control-collapsed');
     //L.DomUtil.addClass(categoryLayers._separator, "control-layers-show");
     //L.DomUtil.addClass(categoryLayers._overlaysList, "control-layers-show");
-    categoryLayers._separator.style.display = 'block';
+    //categoryLayers._separator.style.display = 'block';
     categoryLayers._overlaysList.style.display = 'block';
   }, function() {
+    L.DomUtil.addClass(categoryLayers._container, 'categories-control-collapsed');
     //L.DomUtil.removeClass(categoryLayers._separator, "control-layers-show");
     //L.DomUtil.removeClass(categoryLayers._overlaysList, "control-layers-show");
-    categoryLayers._separator.style.display = 'none';
+    //categoryLayers._separator.style.display = 'none';
     categoryLayers._overlaysList.style.display = 'none';
   });
 

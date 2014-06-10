@@ -56,9 +56,18 @@ a {
     cursor:pointer;
 }
 
+.categories-control{
+  min-width: 120px;
+}
+
 .categories-control a{
   background-image: url(../img/pin-gray.55.png);
   background-size: 30px 30px;
+}
+
+.categories-control-collapsed .leaflet-control-layers-separator{
+  height: 2px;
+  border-bottom: 1px solid #ddd;
 }
 /*
 .leaflet-control-layers-separator{
