@@ -282,6 +282,7 @@ function map() {
       helpContentsSpan.innerHTML = 'To list your venue go to <a id="osm-edit-link" href=\"http://www.openstreetmap.org/edit\" target=\"_blank\">OpenStreetMap editor</a>.</br></br>';
       helpContentsSpan.innerHTML += 'Please report bugs and feature requests on the <a href=\"http://github.com/townofcarrboro/map/issues\" target=\"_blank\">github issue tracker</a>.</br></br>';
       helpContentsSpan.innerHTML += 'This project is open-source (<a href=\"http://www.apache.org/licenses/LICENSE-2.0.html\" target=\"_blank\">Apache 2 license</a>) and can be forked on <a href=\"http://github.com/townofcarrboro/map\" target=\"_blank\">github</a>.</br></br>';
+    helpContentsSpan.innerHTML += 'If you want to embed a map centered on your business, look at this <a href=\"http://leafletjs.com/examples/quick-start.html\">example</a>.</br>'
       $("#helpContents").append = helpContentsSpan;
       return this._div;
   }
