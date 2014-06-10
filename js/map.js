@@ -42,6 +42,11 @@ function map() {
 		maxZoom: 19
 	});
 
+  var tileMapbox = L.tileLayer(
+    'https://{s}.tiles.mapbox.com/v3/examples.map-i87786ca/{z}/{x}/{y}.png',{
+    attribution: 'Map tiles by <a href="http://mapbox.com/about/maps">Mapbox</a>',
+		maxZoom: 19
+  });
 	var tileToner = L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {
 		attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. ' + dataCopyright,
 		maxZoom: 18
@@ -51,6 +56,17 @@ function map() {
 		attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. ' + dataCopyright,
 		maxZoom: 18
 	});
+
+  var tileLandscape = L.tileLayer('http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://thunderforest.com">ThunderForest</a>',
+    maxZoom: 19
+  });
+
+  var tileOutdoors = L.tileLayer('http://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://thunderforest.com">ThunderForest</a>',
+    maxZoom: 19
+  });
+
 
 	var categories = ["Amenity", "Arts", "Financial", "Food", "Healthcare", "Shopping", "Transport"];
 	var clusters = {};
@@ -112,7 +128,7 @@ function map() {
     }
   };
   var subClustersWithPoints = $.extend(true, {}, subClusters);
-  var mapLayers = [tileMapQuest];
+  var mapLayers = [tileMapbox];
 	for (var i = 0; i < categories.length; i++) {
     var category = categories[i];
 		clusters[category] = new L.MarkerClusterGroup(
@@ -150,9 +166,13 @@ function map() {
 
 	var layers = L.control.layers({
 		"OpenStreetMap": tileOSM,
+    "Mapbox": tileMapbox,
 		"MapQuestOpen": tileMapQuest,
+    "MapQuestAerial": tileMapQuestAerial,
 		"Toner": tileToner,
 		"Watercolor": tileWatercolor,
+    "Landscape": tileLandscape,
+    "Outdoors": tileOutdoors,
   },{},{
 		collapsed: true
 	}).addTo(map);
@@ -165,18 +185,21 @@ function map() {
 		{collapsed: false}
   ).addTo(map);
   L.DomUtil.addClass(categoryLayers._container, 'categories-control');
+  L.DomUtil.addClass(categoryLayers._container, 'categories-control-collapsed');
   categoryLayers._container.id = 'cat';
-  categoryLayers._separator.style.display = 'none';
+  //categoryLayers._separator.style.display = 'none';
   categoryLayers._overlaysList.style.display = 'none';
   $('#cat').hover(function() {
+    L.DomUtil.removeClass(categoryLayers._container, 'categories-control-collapsed');
     //L.DomUtil.addClass(categoryLayers._separator, "control-layers-show");
     //L.DomUtil.addClass(categoryLayers._overlaysList, "control-layers-show");
-    categoryLayers._separator.style.display = 'block';
+    //categoryLayers._separator.style.display = 'block';
     categoryLayers._overlaysList.style.display = 'block';
   }, function() {
+    L.DomUtil.addClass(categoryLayers._container, 'categories-control-collapsed');
     //L.DomUtil.removeClass(categoryLayers._separator, "control-layers-show");
     //L.DomUtil.removeClass(categoryLayers._overlaysList, "control-layers-show");
-    categoryLayers._separator.style.display = 'none';
+    //categoryLayers._separator.style.display = 'none';
     categoryLayers._overlaysList.style.display = 'none';
   });
 
@@ -279,6 +302,7 @@ function map() {
       helpContentsSpan.innerHTML = 'To list your venue go to <a id="osm-edit-link" href=\"http://www.openstreetmap.org/edit\" target=\"_blank\">OpenStreetMap editor</a>.</br></br>';
       helpContentsSpan.innerHTML += 'Please report bugs and feature requests on the <a href=\"http://github.com/townofcarrboro/map/issues\" target=\"_blank\">github issue tracker</a>.</br></br>';
       helpContentsSpan.innerHTML += 'This project is open-source (<a href=\"http://www.apache.org/licenses/LICENSE-2.0.html\" target=\"_blank\">Apache 2 license</a>) and can be forked on <a href=\"http://github.com/townofcarrboro/map\" target=\"_blank\">github</a>.</br></br>';
+    helpContentsSpan.innerHTML += 'If you want to embed a map centered on your business, look at this <a href=\"http://leafletjs.com/examples/quick-start.html\">example</a>.</br>'
       $("#helpContents").append = helpContentsSpan;
       return this._div;
   }
