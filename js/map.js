@@ -42,6 +42,11 @@ function map() {
 		maxZoom: 19
 	});
 
+  var tileMapbox = L.tileLayer(
+    'https://{s}.tiles.mapbox.com/v3/examples.map-i87786ca/{z}/{x}/{y}.png',{
+    attribution: 'Map tiles by <a href="http://mapbox.com/about/maps">Mapbox</a>',
+		maxZoom: 19
+  });
 	var tileToner = L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {
 		attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. ' + dataCopyright,
 		maxZoom: 18
@@ -51,6 +56,17 @@ function map() {
 		attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. ' + dataCopyright,
 		maxZoom: 18
 	});
+
+  var tileLandscape = L.tileLayer('http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://thunderforest.com">ThunderForest</a>',
+    maxZoom: 19
+  });
+
+  var tileOutdoors = L.tileLayer('http://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://thunderforest.com">ThunderForest</a>',
+    maxZoom: 19
+  });
+
 
 	var categories = ["Amenity", "Arts", "Financial", "Food", "Healthcare", "Shopping", "Transport"];
 	var clusters = {};
@@ -112,7 +128,7 @@ function map() {
     }
   };
   var subClustersWithPoints = $.extend(true, {}, subClusters);
-  var mapLayers = [tileMapQuest];
+  var mapLayers = [tileMapbox];
 	for (var i = 0; i < categories.length; i++) {
     var category = categories[i];
 		clusters[category] = new L.MarkerClusterGroup(
@@ -150,9 +166,13 @@ function map() {
 
 	var layers = L.control.layers({
 		"OpenStreetMap": tileOSM,
+    "Mapbox": tileMapbox,
 		"MapQuestOpen": tileMapQuest,
+    "MapQuestAerial": tileMapQuestAerial,
 		"Toner": tileToner,
 		"Watercolor": tileWatercolor,
+    "Landscape": tileLandscape,
+    "Outdoors": tileOutdoors,
   },{},{
 		collapsed: true
 	}).addTo(map);
